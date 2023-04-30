@@ -214,6 +214,34 @@ void DeviceThread::handleBroadcastMessage(String msg)
 
 }
 
+String DeviceThread::handleConfigMessage(String msg){
+    var payload;
+    if(BroadcastParser::checkForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
+        int requestNodeId;
+        if(!BroadcastParser::getIntField(payload.getDynamicObject(), "requestNodeId", requestNodeId, 0)) {
+            return "";
+        }
+        GenericProcessor* dn = sn->destNode;
+        while(dn) {
+            if(dn -> getNodeId() == requestNodeId)
+                break;
+            dn = dn -> destNode;
+        }
+        
+        if(dn == nullptr) {
+            return "";
+        }
+        
+        std::map<String, var> layoutPayload;
+        layoutPayload["layoutMaxX"] = 32;
+        layoutPayload["layoutMaxY"] = 32;
+        
+        String message = BroadcastParser::build("UG3ElectrodeViewer", "LOADELECTRODELAYOUT", layoutPayload);
+        sn -> sendDataThreadConfigMessage(dn, message);
+    }
+    return "";
+}
+
 
 void DeviceThread::addDigitalOutputCommand(DigitalOutputTimer* timerToDelete, int ttlLine, bool state)
 {

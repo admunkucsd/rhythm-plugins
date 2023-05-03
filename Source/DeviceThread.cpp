@@ -221,16 +221,14 @@ String DeviceThread::handleConfigMessage(String msg){
         if(!BroadcastParser::getIntField(payload.getDynamicObject(), "requestNodeId", requestNodeId, 0)) {
             return "";
         }
-        GenericProcessor* dn = sn->destNode;
-        while(dn) {
-            if(dn -> getNodeId() == requestNodeId)
-                break;
-            dn = dn -> destNode;
-        }
-        
+
+        GenericProcessor* dn = BroadcastParser::getDestinationNode(sn, requestNodeId);
+
         if(dn == nullptr) {
             return "";
         }
+
+        listenerNodes.add(requestNodeId);
         
         std::map<String, var> layoutPayload;
         layoutPayload["layoutMaxX"] = 32;
@@ -917,6 +915,7 @@ void DeviceThread::updateSettings(OwnedArray<ContinuousChannel>* continuousChann
                 {
                     continuousChannels->getLast()->impedance.magnitude = headstage->getImpedanceMagnitude(ch);
                     continuousChannels->getLast()->impedance.phase = headstage->getImpedancePhase(ch);
+                    continuousChannels->getLast()->impedance.measured = true;
                 }
 
             }
@@ -1004,9 +1003,32 @@ void DeviceThread::impedanceMeasurementFinished()
             if (hs->isConnected())
             {
                 hs->setImpedances(impedances);
+                /*
+                for (int ch = 0; ch < hs ->getNumChannels(); ch++)
+                {                      
+                    sn->continuousChannels[ch]->impedance.magnitude = hs->getImpedanceMagnitude(ch);
+                    continuousChannels[ch]->impedance.phase = hs->getImpedancePhase(ch);
+                    sn->getContin
+
+                }
+                */
             }
         }
     }
+    
+    sendImpedanceNotification();
+}
+
+void DeviceThread::sendImpedanceNotification() {
+    std::map<String, var> emptyPayload;
+    for(int nodeId : listenerNodes) {
+        GenericProcessor* dn = BroadcastParser::getDestinationNode(sn, nodeId);
+        if (dn) {
+            String message = BroadcastParser::build("", "IMPEDANCESREADY", emptyPayload);
+            sn->sendDataThreadConfigMessage(dn, message);
+        }
+    }
+
 }
 
 void DeviceThread::saveImpedances(File& file)

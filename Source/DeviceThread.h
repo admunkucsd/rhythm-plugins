@@ -112,6 +112,8 @@ namespace RhythmNode
 		/** Updates the measured impedance values for each channel*/
 		void impedanceMeasurementFinished();
 
+		void sendImpedanceNotification();
+
 		/** Returns an array of connected headstages*/
 		Array<const Headstage*> getConnectedHeadstages();
 
@@ -379,6 +381,8 @@ namespace RhythmNode
 		StringArray channelNames;
 
 		double ts = 0; // placeholder double timestamp value
+
+		SortedSet<int> listenerNodes;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DeviceThread);
 	};

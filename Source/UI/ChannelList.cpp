@@ -52,15 +52,23 @@ ChannelList::ChannelList(DeviceThread* board_, DeviceEditor* editor_) :
     numberingScheme->setSelectedId(1, dontSendNotification);
     addAndMakeVisible(numberingScheme);
 
+    impedanceEnableButton = new UtilityButton("Measure Impedances: OFF", Font("Default", 13, Font::plain));
+    impedanceEnableButton->setRadius(3);
+    impedanceEnableButton->setBounds(280,10,200,25);
+    impedanceEnableButton->addListener(this);
+    impedanceEnableButton->setClickingTogglesState(true);
+    impedanceEnableButton->setToggleState(false, sendNotification);
+    addAndMakeVisible(impedanceEnableButton);
+    
     impedanceButton = new UtilityButton("Measure Impedances", Font("Default", 13, Font::plain));
     impedanceButton->setRadius(3);
-    impedanceButton->setBounds(280,10,140,25);
+    impedanceButton->setBounds(490,10,140,25);
     impedanceButton->addListener(this);
     addAndMakeVisible(impedanceButton);
 
     saveImpedanceButton = new UtilityButton("Save Impedances", Font("Default", 13, Font::plain));
     saveImpedanceButton->setRadius(3);
-    saveImpedanceButton->setBounds(430,10,150,25);
+    saveImpedanceButton->setBounds(640,10,150,25);
     saveImpedanceButton->addListener(this);
     saveImpedanceButton->setEnabled(false);
     addAndMakeVisible(saveImpedanceButton);
@@ -87,8 +95,20 @@ void ChannelList::buttonClicked(Button* btn)
 
     if (btn == impedanceButton)
     {
-        editor->measureImpedance();
-        saveImpedanceButton->setEnabled(true);
+        if(impedanceEnableButton -> getToggleState()){
+            bool shouldMeasure = AlertWindow::showOkCancelBox(AlertWindow::AlertIconType::WarningIcon, "Confirm Impedance Measurement",
+                String("The impedance measurement function is intended for use while electrodes are not on a patient.\n\n")
+                + String("You have enabled impedance measurement.\n\n")
+                + String("ARE YOU SURE YOU WOULD LIKE TO MEASURE IMPEDANCE?"), "YES", "NO");
+            if(shouldMeasure)
+                return
+            editor->measureImpedance();
+            saveImpedanceButton->setEnabled(true);
+        } else {
+            AlertWindow::showMessageBox(AlertWindow::AlertIconType::WarningIcon, "Impedance Measurement Not Active",
+                String("The impedance measurement function is intended for use while electrodes are not on a patient.\n\n")
+                                        + String("You must toggle the impedance measurement button to confirm electrodes are not on a patient."));
+        }
     }
     else if (btn == saveImpedanceButton)
     {
@@ -103,6 +123,9 @@ void ChannelList::buttonClicked(Button* btn)
             File impedenceFile = chooseOutputFile.getResult();
             editor->saveImpedance(impedenceFile);
         }
+    }
+    else if(btn == impedanceEnableButton) {
+        static_cast<UtilityButton*>(btn)->setLabel(btn->getToggleState() ? "Measure Impedances: ON" : "Measure Impedances: OFF");
     }
 }
 

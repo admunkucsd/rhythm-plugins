@@ -68,6 +68,7 @@ namespace RhythmNode
 		DeviceThread* board;
 		DeviceEditor* editor;
 
+        ScopedPointer<UtilityButton> impedanceEnableButton;
 		ScopedPointer<UtilityButton> impedanceButton;
 		ScopedPointer<UtilityButton> saveImpedanceButton;
 

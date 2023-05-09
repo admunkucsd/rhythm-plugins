@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
+set(INSTALL_GTEST OFF)
 if (NOT DEFINED GUI_BASE_DIR)
 	if (DEFINED ENV{GUI_BASE_DIR})
 		set(GUI_BASE_DIR $ENV{GUI_BASE_DIR})
@@ -33,7 +34,11 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 
 
 set(SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Source)
+set(TESTS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Tests)
+
 file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES false "${SOURCE_PATH}/*.cpp" "${SOURCE_PATH}/*.h")
+file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES false "${TESTS_PATH}/*.cpp")
+
 set(GUI_COMMONLIB_DIR ${GUI_BASE_DIR}/installed_libs)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -48,10 +53,34 @@ else()
 	add_library(${PLUGIN_NAME} SHARED ${SRC_FILES})
 endif()
 
+add_library(${PLUGIN_NAME}_testable SHARED ${SRC_FILES})
+
 target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME} PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
 
+target_compile_features(${PLUGIN_NAME}_testable PUBLIC cxx_auto_type cxx_generalized_initializers)
+target_include_directories(${PLUGIN_NAME}_testable PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
+
+include(FetchContent)
+FetchContent_Declare(
+	googletest
+	GIT_REPOSITORY    https://github.com/google/googletest.git
+	GIT_TAG           release-1.12.1
+)
+
+FetchContent_MakeAvailable(googletest)
+enable_testing()
+
+add_executable(
+		${PLUGIN_NAME}_tests
+		${TESTS_FILES}
+)
+target_compile_features(${PLUGIN_NAME}_tests PRIVATE cxx_std_17)
+
+
 set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
+set(GUI_TEST_BIN_COMMON_DIR ${GUI_BASE_DIR}/Build/TestBin/common)
+set(GUI_TEST_HELPERS_INCLUDE_DIR ${GUI_BASE_DIR}/TestHelpers/include)
 
 if (NOT CMAKE_LIBRARY_ARCHITECTURE)
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -81,12 +110,26 @@ elseif(APPLE)
 	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
 	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api8")
 
+	set_property(TARGET ${PLUGIN_NAME}_testable APPEND_STRING PROPERTY LINK_FLAGS
+	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api8")
+
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND 
     install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib" 
 	"@rpath/libokFrontPanel.dylib" $<TARGET_FILE:${PLUGIN_NAME}>)
 
 	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api8)
 endif()
+
+add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
+find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
+find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+
+find_library(TEST_HELPERS NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
+find_library(TEST_HELPERS_D NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+
+target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
+target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${TEST_HELPERS_DIRECTORY}/include)
+add_test(NAME ${PLUGIN_NAME}_tests  COMMAND ${PLUGIN_NAME}_tests)
 
 #create filters for vs and xcode
 
@@ -106,5 +149,7 @@ elseif(LINUX)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
+	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
 endif()

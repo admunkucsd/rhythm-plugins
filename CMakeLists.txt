@@ -121,11 +121,11 @@ elseif(APPLE)
 endif()
 
 add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
-find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
-find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release)
+find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug)
 
-find_library(TEST_HELPERS NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
-find_library(TEST_HELPERS_D NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+find_library(TEST_HELPERS NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release)
+find_library(TEST_HELPERS_D NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug)
 
 target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
 target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${TEST_HELPERS_DIRECTORY}/include)

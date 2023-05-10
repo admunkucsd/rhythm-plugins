@@ -80,7 +80,7 @@ target_compile_features(${PLUGIN_NAME}_tests PRIVATE cxx_std_17)
 
 set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
 set(GUI_TEST_BIN_COMMON_DIR ${GUI_BASE_DIR}/Build/TestBin/common)
-set(GUI_TEST_HELPERS_INCLUDE_DIR ${GUI_BASE_DIR}/TestHelpers/include)
+set(GUI_TEST_HELPERS_DIR ${GUI_BASE_DIR}/TestHelpers)
 
 if (NOT CMAKE_LIBRARY_ARCHITECTURE)
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -121,14 +121,27 @@ elseif(APPLE)
 endif()
 
 add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
-find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
-find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+if(MSVC)
+	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_BASE_DIR}/Build/Release" REQUIRED)
+	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_BASE_DIR}/Build/Debug" REQUIRED)
 
-find_library(TEST_HELPERS NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Release REQUIRED)
-find_library(TEST_HELPERS_D NAMES test_helpers HINTS ${GUI_TEST_BIN_COMMON_DIR}/Debug REQUIRED)
+	find_library(TEST_HELPERS NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Release" REQUIRED)
+	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Debug" REQUIRED)
+	
+	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
+else()
+	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
+	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)
 
-target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
-target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${TEST_HELPERS_DIRECTORY}/include)
+	find_library(TEST_HELPERS NAMES test_helpers HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
+	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)
+
+	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" )
+endif()
+
+target_link_libraries(${PLUGIN_NAME}_testable ${FRONT_PANEL_LIBRARY} optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
+target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} ${FRONT_PANEL_LIBRARY} PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
+target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${GUI_TEST_HELPERS_DIR}/include)
 add_test(NAME ${PLUGIN_NAME}_tests  COMMAND ${PLUGIN_NAME}_tests)
 
 #create filters for vs and xcode

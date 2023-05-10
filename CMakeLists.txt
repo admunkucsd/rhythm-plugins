@@ -94,7 +94,8 @@ endif()
 if(MSVC)
 	target_link_libraries(${PLUGIN_NAME} ${GUI_BIN_DIR}/open-ephys.lib)
 	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
-	
+	target_compile_options(${PLUGIN_NAME}_testable PRIVATE /sdl- /W0)
+
 	install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
 
 elseif(LINUX)
@@ -129,6 +130,11 @@ if(MSVC)
 	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Debug" REQUIRED)
 	
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
+	set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+	set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+
+	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
+ 				COMMAND ${CMAKE_COMMAND} -E copy_directory ${GUI_TEST_BIN_COMMON_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/Build")
 else()
 	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
 	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)
@@ -143,6 +149,8 @@ target_link_libraries(${PLUGIN_NAME}_testable ${FRONT_PANEL_LIBRARY} optimized $
 target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} ${FRONT_PANEL_LIBRARY} PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
 target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${GUI_TEST_HELPERS_DIR}/include)
 add_test(NAME ${PLUGIN_NAME}_tests  COMMAND ${PLUGIN_NAME}_tests)
+
+
 
 #create filters for vs and xcode
 

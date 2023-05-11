@@ -78,7 +78,7 @@ namespace RhythmNode
 
 		@see DataThread, SourceNode
 	*/
-	class DeviceThread : public DataThread
+	class TESTABLE DeviceThread : public DataThread
 	{
 		friend class ImpedanceMeter;
 

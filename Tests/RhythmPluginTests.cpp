@@ -4,7 +4,7 @@
 
 
 //#include <ProcessorHeaders.h>
-
+#include "../Source/DeviceThread.h"
 #include <ModelProcessors.h>
 #include <ModelApplication.h>
 #include <TestFixtures.h>
@@ -24,6 +24,7 @@ protected:
     void TearDown() override {
         ProcessorTest::TearDown();
     }
+    RhythmNode::DeviceThread* uut;
 
 };
 

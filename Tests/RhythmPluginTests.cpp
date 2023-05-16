@@ -48,21 +48,18 @@ protected:
     }
 
     void buildUSBDataBuffer() {
-        int bytesPerSample = 2 * (35 * 32 + 16);
-        int samplesPerBlock = 128;
-        int bytesPerBlock =  (samplesPerBlock * bytesPerSample);
         packedBuffer.realloc(bytesPerBlock);
         for(int sample = 0; sample < samplesPerBlock; sample++) {
-            packedBuffer[0 + sample * bytesPerBlock] = 0x53;
-            packedBuffer[1 + sample * bytesPerBlock] = 0x2a;
-            packedBuffer[2+ sample * bytesPerBlock] = 0x13;
-            packedBuffer[3+ sample * bytesPerBlock] = 0x38;
-            packedBuffer[4+ sample * bytesPerBlock] = 0xaa;
-            packedBuffer[5+ sample * bytesPerBlock] = 0x2a;
-            packedBuffer[6+ sample * bytesPerBlock] = 0xa2;
-            packedBuffer[7+ sample * bytesPerBlock] = 0xd7;
-            for(int i = 8; i < bytesPerBlock; i++) {
-                packedBuffer[i + sample*bytesPerBlock] = 0x00;
+            packedBuffer[0 + sample * bytesPerSample] = 0x53;
+            packedBuffer[1 + sample * bytesPerSample] = 0x2a;
+            packedBuffer[2+ sample * bytesPerSample] = 0x13;
+            packedBuffer[3+ sample * bytesPerSample] = 0x38;
+            packedBuffer[4+ sample * bytesPerSample] = 0xaa;
+            packedBuffer[5+ sample * bytesPerSample] = 0x2a;
+            packedBuffer[6+ sample * bytesPerSample] = 0xa2;
+            packedBuffer[7+ sample * bytesPerSample] = 0xd7;
+            for(int i = 8; i < bytesPerSample; i++) {
+                packedBuffer[i + sample*bytesPerSample] = 0x00;
             }
         }
     }
@@ -73,26 +70,48 @@ protected:
     RhythmNode::IntanRecordController* deviceThread;
     SourceNode* processor;
     int64_t current_sample_index = 0;
+    
+    //16-bit words
+    //data frame = 35 words/stream * 32 streams + 4 words (magic number) + 2 words (time stamp) + 8 words (ADC results)+ 2 words (TTL input/output)
+    const uint64_t bytesPerSample = 2272;
+    const uint64_t samplesPerBlock = 256;
+    const uint64_t bytesPerBlock = 581632;
 };
 
 TEST_F(RhythmPluginTests, DataAlignmentTest) {
 
     buildUSBDataBuffer();
-    AudioBuffer<float> inputBuffer (1024, 256);
     deviceThread->testBuffer = packedBuffer.get();
+
+    AudioBuffer<float> inputBuffer (1024, 256);
+    
     tester->startAcquisition(false);
     WriteBlock(inputBuffer);
     tester->stopAcquisition();
 
+    ASSERT_EQ(deviceThread->lastReadIndex, 581632);
+
 }
 
 TEST_F(RhythmPluginTests, DataIntegrityTest) {
-	GTEST_SKIP();
+    GTEST_SKIP();
 }
 
 
 TEST_F(RhythmPluginTests, ReadIndexTest) {
-    GTEST_SKIP();
+    
+    buildUSBDataBuffer();
+    //Misalign 2nd data frame magic number
+    packedBuffer[2274] = 0x00;
+    deviceThread->testBuffer = packedBuffer.get();
+    
+    AudioBuffer<float> inputBuffer (1024, 256);
+    tester->startAcquisition(false);
+    WriteBlock(inputBuffer);
+    tester->stopAcquisition();
+
+    //Expect device thread to exit after 1 full frame after bad frame
+    ASSERT_EQ(deviceThread->lastReadIndex, 2272);
 
 }
 

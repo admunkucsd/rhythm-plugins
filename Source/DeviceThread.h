@@ -249,6 +249,7 @@ namespace RhythmNode
 		int MAX_NUM_HEADSTAGES;
         #ifdef BUILD_TESTS
         unsigned char* testBuffer;
+        int lastReadIndex;
         #endif
 	private:
         

@@ -130,16 +130,17 @@ DeviceThread::DeviceThread(SourceNode* sn, BoardType boardType_) : DataThread(sn
         }
     }
 #else
-        deviceFound = true;
-        dataBlock = new Rhd2000DataBlockUsb3(1);
-        usbThread = new USBThread(evalBoard);
-        enabledStreams.clear();
-        int hsIndex = 0;
-        for (auto headstage : headstages)
-        {
-            headstage->setNumStreams(0); // reset stream count
-            enableHeadstage(hsIndex++, true, 2, 32);
-        }
+    deviceFound = true;
+    dataBlock = new Rhd2000DataBlockUsb3(1);
+    usbThread = new USBThread(evalBoard);
+    enabledStreams.clear();
+    int hsIndex = 0;
+    for (auto headstage : headstages)
+    {
+        headstage->setNumStreams(0); // reset stream count
+        enableHeadstage(hsIndex++, true, 2, 32);
+    }
+    lastReadIndex = -1;
 
 #endif
 }
@@ -1983,7 +1984,9 @@ bool DeviceThread::updateBuffer()
             TTL_OUTPUT_STATE[7]);
 
     }
-
+#ifdef BUILD_TESTS
+    lastReadIndex = index;
+#endif
     return true;
 
 }

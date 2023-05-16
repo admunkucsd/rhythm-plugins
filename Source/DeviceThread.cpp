@@ -105,7 +105,7 @@ DeviceThread::DeviceThread(SourceNode* sn, BoardType boardType_) : DataThread(sn
     dacChannels = new int[8];
     dacThresholds = new float[8];
     dacChannelsToUpdate = new bool[8];
-
+#ifndef BUILD_TESTS
     if (openBoard(libraryFilePath))
     {
         dataBlock = new Rhd2000DataBlockUsb3(1);
@@ -129,12 +129,25 @@ DeviceThread::DeviceThread(SourceNode* sn, BoardType boardType_) : DataThread(sn
             dacThresholds[k] = 0;
         }
     }
+#else
+        deviceFound = true;
+        dataBlock = new Rhd2000DataBlockUsb3(1);
+        usbThread = new USBThread(evalBoard);
+        enabledStreams.clear();
+        int hsIndex = 0;
+        for (auto headstage : headstages)
+        {
+            headstage->setNumStreams(0); // reset stream count
+            enableHeadstage(hsIndex++, true, 2, 32);
+        }
+
+#endif
 }
 
 DeviceThread::~DeviceThread()
 {
     LOGD( "RHD2000 interface destroyed." );
-
+#ifndef BUILD_TESTS
     if (deviceFound && boardType == ACQUISITION_BOARD)
     {
         int ledArray[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -143,7 +156,7 @@ DeviceThread::~DeviceThread()
 
     if (deviceFound)
         evalBoard->resetFpga();
-
+#endif
     delete[] dacStream;
     delete[] dacChannels;
     delete[] dacThresholds;
@@ -1693,6 +1706,7 @@ void DeviceThread::setCableLength(int hsNum, float length)
 
 bool DeviceThread::startAcquisition()
 {
+#ifndef BUILD_TESTS
     if (!deviceFound || (getNumChannels() == 0))
         return false;
 
@@ -1720,7 +1734,7 @@ bool DeviceThread::startAcquisition()
     evalBoard->run();
 
     //LOGD("Expecting blocksize of ", blockSize, " for ", evalBoard->getNumEnabledDataStreams(), " streams");
-
+#endif
    
 
     startThread();
@@ -1734,10 +1748,10 @@ bool DeviceThread::stopAcquisition()
 {
 
     //LOGD("RHD2000 data thread stopping acquisition.");
-
+#ifndef BUILD_TESTS
     std::cout << "RHD2000 data thread stopping acquisition." << std::endl;
     usbThread->stopAcquisition();
-
+#endif
     if (isThreadRunning())
     {
         signalThreadShouldExit();
@@ -1752,7 +1766,7 @@ bool DeviceThread::stopAcquisition()
     {
         //LOGD("RHD2000 data thread failed to exit, continuing anyway...");
     }
-
+#ifndef BUILD_TESTS
     if (deviceFound)
     {
         evalBoard->setContinuousRunMode(false);
@@ -1760,9 +1774,11 @@ bool DeviceThread::stopAcquisition()
         LOGD( "Flushing FIFO." );
         evalBoard->flush();
     }
-
+#endif
     sourceBuffers[0]->clear();
-
+    isTransmitting = false;
+    updateSettingsDuringAcquisition = false;
+#ifndef BUILD_TESTS
     if (deviceFound && boardType == ACQUISITION_BOARD)
     {
         //LOGD( "Number of 16-bit words in FIFO: ", evalBoard->numWordsInFifo() );
@@ -1771,8 +1787,7 @@ bool DeviceThread::stopAcquisition()
         evalBoard->setLedDisplay(ledArray);
     }
 
-    isTransmitting = false;
-    updateSettingsDuringAcquisition = false;
+
 
     // remove timers
     digitalOutputTimers.clear();
@@ -1780,7 +1795,7 @@ bool DeviceThread::stopAcquisition()
     // remove commands
     while (!digitalOutputCommands.empty())
         digitalOutputCommands.pop();
-
+#endif
     return true;
 }
 
@@ -1789,12 +1804,16 @@ bool DeviceThread::updateBuffer()
 
 
     unsigned char* bufferPtr;
+#ifdef BUILD_TESTS
+    bufferPtr = testBuffer;
+#else
     //std::cout << "Current number of words: " <<  evalBoard->numWordsInFifo() << " for " << blockSize << std::endl;
     long return_code;
-
+        
     return_code = usbThread->usbRead(bufferPtr);
     if (return_code == 0)
         return true;
+#endif
 
     int index = 0;
     int auxIndex, chanIndex;

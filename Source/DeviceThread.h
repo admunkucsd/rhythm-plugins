@@ -247,9 +247,11 @@ namespace RhythmNode
 			bool state);
 
 		int MAX_NUM_HEADSTAGES;
-
+        #ifdef BUILD_TESTS
+        unsigned char* testBuffer;
+        #endif
 	private:
-
+        
 		std::queue<DigitalOutputCommand> digitalOutputCommands;
 
 		OwnedArray<DigitalOutputTimer> digitalOutputTimers;

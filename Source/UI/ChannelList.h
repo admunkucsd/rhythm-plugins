@@ -69,7 +69,7 @@ namespace RhythmNode
 		DeviceEditor* editor;
 
         ScopedPointer<UtilityButton> impedanceEnableButton;
-		ScopedPointer<UtilityButton> impedanceButton;
+        ScopedPointer<UtilityButton> impedanceButton;
 		ScopedPointer<UtilityButton> saveImpedanceButton;
 
 		ScopedPointer<ComboBox> numberingScheme;

@@ -23,6 +23,35 @@ protected:
     void TearDown() override {
     }
     
+    void parseEventBuffer(const MidiBuffer& eventBuffer, int &newSamples) {
+        if (eventBuffer.getNumEvents() > 0)
+        {
+            
+            for (const auto meta : eventBuffer)
+            {
+                const uint8* dataptr = meta.data;
+                
+                if (static_cast<Event::Type> (*dataptr) == Event::Type::SYSTEM_EVENT
+                    && static_cast<SystemEvent::Type>(*(dataptr + 1) == SystemEvent::Type::TIMESTAMP_AND_SAMPLES))
+                {
+                    uint16 sourceProcessorId = *reinterpret_cast<const uint16*>(dataptr + 2);
+                    uint16 sourceStreamId = *reinterpret_cast<const uint16*>(dataptr + 4);
+                    uint32 sourceChannelIndex = *reinterpret_cast<const uint16*>(dataptr + 6);
+                    
+                    int64 startSample = *reinterpret_cast<const int64*>(dataptr + 8);
+                    double startTimestamp = *reinterpret_cast<const double*>(dataptr + 16);
+                    uint32 nSamples = *reinterpret_cast<const uint32*>(dataptr + 24);
+                    int64 initialTicks = *reinterpret_cast<const int64*>(dataptr + 28);
+
+                    
+                    newSamples = nSamples;
+                    
+                }
+            }
+        }
+    }
+    
+    
     void WriteBlock(AudioBuffer<float> &buffer) {
         auto audio_processor = (AudioProcessor *)processor;
         auto data_streams = processor->getDataStreams();
@@ -30,17 +59,20 @@ protected:
         auto streamId = data_streams[0]->getStreamId();
 
         MidiBuffer eventBuffer;
-
-        auto original_buffer = buffer;
         
-        int currentThreadReadIndex = deviceThread -> lastReadIndex;
-        while (currentThreadReadIndex == -1) {
-            currentThreadReadIndex = deviceThread -> lastReadIndex;
-
+        AudioBuffer<float> inputBuffer (1024, 256);
+        int samplesRead = 0;
+        while(samplesRead < buffer.getNumSamples()) {
+            audio_processor->processBlock(inputBuffer, eventBuffer);
+            int newSamples = 0;
+            parseEventBuffer(eventBuffer, newSamples);
+            int samplesToCopy = (newSamples + samplesRead) > buffer.getNumSamples() ? buffer.getNumSamples() - samplesRead : newSamples;
+            for(int channelIndex = 0; channelIndex < 1024; channelIndex++) {
+                buffer.copyFrom(channelIndex, samplesRead, inputBuffer, channelIndex, 0, samplesToCopy);
+            }
+            samplesRead += samplesToCopy;
         }
-        
-        audio_processor->processBlock(buffer, eventBuffer);
-        currentThreadReadIndex = -1;
+
         current_sample_index += buffer.getNumSamples();
     }
 

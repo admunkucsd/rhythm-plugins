@@ -41,6 +41,7 @@ namespace RhythmNode
 		void startAcquisition(int nBytes);
 		void stopAcquisition();
 		long usbRead(unsigned char*&);
+        bool hasErrored();
 	private:
 		Rhd2000EvalBoardUsb3* const m_board;
 		HeapBlock<unsigned char> m_buffers[2];
@@ -49,6 +50,7 @@ namespace RhythmNode
 		unsigned short m_readBuffer{ 0 };
 		bool m_canRead{ false };
 		CriticalSection m_lock;
+        bool has_errored = false;
 	};
 
 }

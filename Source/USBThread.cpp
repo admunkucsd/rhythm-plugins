@@ -47,6 +47,7 @@ void USBThread::startAcquisition(int nBytes)
 	m_curBuffer = 0;
 	m_readBuffer = 0;
 	m_canRead = true;
+    has_errored = false;
 	startThread();
 }
 
@@ -70,9 +71,17 @@ long USBThread::usbRead(unsigned char*& buffer)
 	buffer = m_buffers[m_readBuffer].getData();
 	long read = m_lastRead[m_readBuffer];
 	m_readBuffer = ++m_readBuffer % 2;
-	m_canRead = true;
+    if (read < 0) {
+        m_canRead = false;
+    } else {
+        m_canRead = true;
+    }
 	notify();
 	return read;
+}
+
+bool USBThread::hasErrored() {
+    return has_errored;
 }
 
 void USBThread::run()
@@ -83,13 +92,46 @@ void USBThread::run()
 		if (m_canRead)
 		{
 			m_lock.exit();
-			long read;
-			do
-			{
-				if (threadShouldExit())
-					break;
-				read = m_board->readDataBlocksRaw(1, m_buffers[m_curBuffer].getData());
-			} while (read <= 0);
+
+            int num_continuous_zeros = 0;
+            auto first_zero_at = std::chrono::steady_clock::now();
+
+            long read = 0;
+            while (true) {
+                if (threadShouldExit()) {
+                    break;
+                }
+
+                read = m_board->readDataBlocksRaw(1, m_buffers[m_curBuffer].getData());
+                if (read == 0) {
+                    if (num_continuous_zeros == 0) {
+                        first_zero_at = std::chrono::steady_clock::now();
+                    }
+                    num_continuous_zeros++;
+                    // After some number of consecutive zeros and a timeout, bail.
+                    if (num_continuous_zeros >= 100 && std::chrono::steady_clock::now() - first_zero_at > std::chrono::seconds(5)) {
+                        // ERROR
+                        LOGE("Board seems to have stopped producing data for >= 5s. Bailing.");
+                        has_errored = true;
+                        read = -1;
+                        signalThreadShouldExit();
+                        break;
+                    }
+                    continue;
+                } else if (read > 0) {
+                    num_continuous_zeros = 0;
+                    break;
+                } else {
+                    // ERROR
+                    LOGE("Error occurred when reading from Rhythm USB. Return code=", read);
+                    // read will be set as negative and thus m_lastRead will have a negative return code, which is
+                    // respected above
+                    has_errored = true;
+                    signalThreadShouldExit();
+                    break;
+                }
+            }
+
 			{
 				ScopedLock lock(m_lock);
 				m_lastRead[m_curBuffer] = read;

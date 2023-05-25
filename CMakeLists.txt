@@ -130,11 +130,17 @@ if(MSVC)
 	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Debug" REQUIRED)
 	
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
+	set(FRONT_PANEL_RUNTIME "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll" )
+
 	set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 	set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
 
 	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
  				COMMAND ${CMAKE_COMMAND} -E copy_directory ${GUI_TEST_BIN_COMMON_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/Build")
+	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_RUNTIME} "${CMAKE_CURRENT_SOURCE_DIR}/Build/Debug")
+	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_RUNTIME} "${CMAKE_CURRENT_SOURCE_DIR}/Build/Release")
 else()
 	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
 	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)

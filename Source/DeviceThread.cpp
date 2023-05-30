@@ -1756,7 +1756,6 @@ bool DeviceThread::stopAcquisition()
     if (isThreadRunning())
     {
         signalThreadShouldExit();
-
     }
 
     if (waitForThreadToExit(500))
@@ -1767,28 +1766,31 @@ bool DeviceThread::stopAcquisition()
     {
         //LOGD("RHD2000 data thread failed to exit, continuing anyway...");
     }
+
 #ifndef BUILD_TESTS
-    if (deviceFound)
-    {
-        evalBoard->setContinuousRunMode(false);
-        evalBoard->setMaxTimeStep(0);
-        LOGD( "Flushing FIFO." );
-        evalBoard->flush();
+    if (!usbThread->hasErrored()) {
+        if (deviceFound)
+        {
+            evalBoard->setContinuousRunMode(false);
+            evalBoard->setMaxTimeStep(0);
+            LOGD( "Flushing FIFO." );
+            evalBoard->flush();
+        }
+        if (deviceFound && boardType == ACQUISITION_BOARD)
+        {
+            //LOGD( "Number of 16-bit words in FIFO: ", evalBoard->numWordsInFifo() );
+
+            int ledArray[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+            evalBoard->setLedDisplay(ledArray);
+        }
+    } else {
+        LOGC("USB thread has exited with errors and is in an indeterminate state. Ensure you restart OpenEphys or "
+             "otherwise fix Rhythm errors first.");
     }
-#endif
+
     sourceBuffers[0]->clear();
     isTransmitting = false;
     updateSettingsDuringAcquisition = false;
-#ifndef BUILD_TESTS
-    if (deviceFound && boardType == ACQUISITION_BOARD)
-    {
-        //LOGD( "Number of 16-bit words in FIFO: ", evalBoard->numWordsInFifo() );
-
-        int ledArray[8] = {1, 0, 0, 0, 0, 0, 0, 0};
-        evalBoard->setLedDisplay(ledArray);
-    }
-
-
 
     // remove timers
     digitalOutputTimers.clear();
@@ -1809,11 +1811,14 @@ bool DeviceThread::updateBuffer()
     bufferPtr = testBuffer;
 #else
     //std::cout << "Current number of words: " <<  evalBoard->numWordsInFifo() << " for " << blockSize << std::endl;
-    long return_code;
-        
-    return_code = usbThread->usbRead(bufferPtr);
-    if (return_code == 0)
+    long return_code = usbThread->usbRead(bufferPtr);
+    if (return_code == 0) {
         return true;
+    } else if (return_code < 0) {
+        // Error occurred
+        return false;
+    }
+    // Fall through if samples to process
 #endif
 
     int index = 0;

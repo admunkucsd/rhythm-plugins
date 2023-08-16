@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.5.0)
-set(INSTALL_GTEST OFF)
 if (NOT DEFINED GUI_BASE_DIR)
 	if (DEFINED ENV{GUI_BASE_DIR})
 		set(GUI_BASE_DIR $ENV{GUI_BASE_DIR})
 	else()
-		set(GUI_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../plugin-GUI)
+		set(GUI_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../plugin-GUI)
 	endif()
 endif()
 
@@ -15,12 +14,6 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64" CACHE STRING "Build architecture for Mac OS
 
 project(OE_PLUGIN_${PLUGIN_NAME})
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-	set(LINUX 1)
-	if(NOT CMAKE_BUILD_TYPE)
-		set(CMAKE_BUILD_TYPE Debug)
-	endif()
-endif()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 	OEPLUGIN
@@ -53,6 +46,8 @@ else()
 	add_library(${PLUGIN_NAME} SHARED ${SRC_FILES})
 endif()
 
+add_dependencies(${PLUGIN_NAME} open-ephys)
+
 add_library(${PLUGIN_NAME}_testable SHARED ${SRC_FILES})
 
 target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers)
@@ -61,15 +56,6 @@ target_include_directories(${PLUGIN_NAME} PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode
 target_compile_features(${PLUGIN_NAME}_testable PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME}_testable PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
 
-include(FetchContent)
-FetchContent_Declare(
-	googletest
-	GIT_REPOSITORY    https://github.com/google/googletest.git
-	GIT_TAG           release-1.12.1
-)
-
-FetchContent_MakeAvailable(googletest)
-enable_testing()
 
 add_executable(
 		${PLUGIN_NAME}_tests
@@ -78,7 +64,7 @@ add_executable(
 target_compile_features(${PLUGIN_NAME}_tests PRIVATE cxx_std_17)
 
 
-set(GUI_BIN_DIR ${GUI_BASE_DIR}/Build/${CONFIGURATION_FOLDER})
+set(GUI_BIN_DIR ${CMAKE_BINARY_DIR}/plugin-GUI/${CONFIGURATION_FOLDER})
 set(GUI_TEST_BIN_COMMON_DIR ${GUI_BASE_DIR}/Build/TestBin/common)
 set(GUI_TEST_HELPERS_DIR ${GUI_BASE_DIR}/TestHelpers)
 
@@ -96,6 +82,7 @@ if(MSVC)
 	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
 	target_compile_options(${PLUGIN_NAME}_testable PRIVATE /sdl- /W0)
 
+	set(INSTALL_PATH  ${GUI_BIN_DIR}/plugins)	
 	install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
 
 elseif(LINUX)
@@ -105,6 +92,7 @@ elseif(LINUX)
 	target_compile_options(${PLUGIN_NAME} PRIVATE -fPIC -rdynamic)
 	target_compile_options(${PLUGIN_NAME} PRIVATE -O3) #enable optimization for linux debug
 	
+	set(INSTALL_PATH  ${GUI_BIN_DIR}/plugins)	
 	install(TARGETS ${PLUGIN_NAME} LIBRARY DESTINATION ${GUI_BIN_DIR}/plugins)
 elseif(APPLE)
 	set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
@@ -114,47 +102,63 @@ elseif(APPLE)
 	set_property(TARGET ${PLUGIN_NAME}_testable APPEND_STRING PROPERTY LINK_FLAGS
 	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api8")
 
-	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND 
-    install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib" 
+	set(INSTALL_PATH  $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api8)
+	
+	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND
+    install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib"
 	"@rpath/libokFrontPanel.dylib" $<TARGET_FILE:${PLUGIN_NAME}>)
 
 	install(TARGETS ${PLUGIN_NAME} DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api8)
 endif()
 
-add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
-if(MSVC)
-	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_BASE_DIR}/Build/Release" REQUIRED)
-	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_BASE_DIR}/Build/Debug" REQUIRED)
 
-	find_library(TEST_HELPERS NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Release" REQUIRED)
-	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_BASE_DIR}/Build/TestHelpers/Debug" REQUIRED)
-	
+if(APPLE)
+       add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${INSTALL_PATH}/$<TARGET_BUNDLE_DIR_NAME:${PLUGIN_NAME}>) 
+       add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_BUNDLE_DIR:${PLUGIN_NAME}> ${INSTALL_PATH}/$<TARGET_BUNDLE_DIR_NAME:${PLUGIN_NAME}>)
+elseif(MSVC OR LINUX)
+       add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PLUGIN_NAME}> ${INSTALL_PATH})
+endif()
+
+add_dependencies(${PLUGIN_NAME}_testable gui_testable_source test_helpers)
+add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
+
+
+if(MSVC)	
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
 	set(FRONT_PANEL_RUNTIME "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll" )
 
-	set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-	set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
+	set_runtime_dll_paths(${PLUGIN_NAME} "${FRONT_PANEL_RUNTIME}")
+	set_runtime_dll_paths(${PLUGIN_NAME}_testable "${FRONT_PANEL_RUNTIME}")
+	install_runtime_dlls(${PLUGIN_NAME}_testable ${PLUGIN_NAME}_tests $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
 
-	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy_directory ${GUI_TEST_BIN_COMMON_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/Build")
-	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_RUNTIME} "${CMAKE_CURRENT_SOURCE_DIR}/Build/Debug")
-	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_RUNTIME} "${CMAKE_CURRENT_SOURCE_DIR}/Build/Release")
-else()
-	find_library(GUI_TESTABLE_SOURCE NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
-	find_library(GUI_TESTABLE_SOURCE_D NAMES gui_testable_source HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)
-
-	find_library(TEST_HELPERS NAMES test_helpers HINTS "${GUI_TEST_BIN_COMMON_DIR}/Release" REQUIRED)
-	find_library(TEST_HELPERS_D NAMES test_helpers HINTS "${GUI_TEST_BIN_COMMON_DIR}/Debug" REQUIRED)
-
+elseif(APPLE)
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" )
+elseif(LINUX)
+	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so" )
+endif()
+
+#need to change the linked libraries search path in the test .exe
+if(APPLE)
+
+    add_custom_command(TARGET ${PLUGIN_NAME}_testable POST_BUILD COMMAND
+    install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib"
+    ${FRONT_PANEL_LIBRARY} $<TARGET_FILE:${PLUGIN_NAME}_testable>)
+
+    add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND
+    install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib"
+    ${FRONT_PANEL_LIBRARY} $<TARGET_FILE:${PLUGIN_NAME}_tests>)
+endif()
+
+# Need to copy Open Ephys testing libraries to test .exe directory
+if(MSVC)
+       add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gui_testable_source> $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
+       add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:test_helpers> $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
 endif()
 
 target_compile_definitions(${PLUGIN_NAME}_testable PRIVATE -DBUILD_TESTS)
-target_link_libraries(${PLUGIN_NAME}_testable PRIVATE ${FRONT_PANEL_LIBRARY} PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
+target_link_libraries(${PLUGIN_NAME}_testable PRIVATE ${FRONT_PANEL_LIBRARY} gui_testable_source test_helpers)
 target_compile_definitions(${PLUGIN_NAME}_tests PRIVATE -DBUILD_TESTS -DTEST_RUNNER)
-target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main optimized ${TEST_HELPERS} debug ${TEST_HELPERS_D} ${FRONT_PANEL_LIBRARY} PUBLIC optimized ${GUI_TESTABLE_SOURCE} debug ${GUI_TESTABLE_SOURCE_D})
+target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main test_helpers ${FRONT_PANEL_LIBRARY} PUBLIC gui_testable_source)
 target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${GUI_TEST_HELPERS_DIR}/include ${GUI_BASE_DIR}/Source)
 add_test(NAME ${PLUGIN_NAME}_tests  COMMAND ${PLUGIN_NAME}_tests)
 
@@ -173,12 +177,14 @@ endforeach()
 if (MSVC)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib")
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll DESTINATION ${GUI_BIN_DIR}/shared CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
+	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll ${GUI_BIN_DIR}/shared)
 elseif(LINUX)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so")
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
 	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
 	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)
-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib DESTINATION $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)	
+	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib  $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
 endif()

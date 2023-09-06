@@ -229,14 +229,14 @@ void DeviceThread::handleBroadcastMessage(String msg)
 }
 
 String DeviceThread::handleConfigMessage(String msg){
-    var payload;
-    if(BroadcastParser::checkForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
+    BroadcastPayload payload;
+    if(BroadcastParser::getPayloadForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
         int requestNodeId;
-        if(!BroadcastParser::getIntField(payload.getDynamicObject(), "requestNodeId", requestNodeId, 0)) {
+        if(!payload.getIntField("requestNodeId", requestNodeId, 0)) {
             return "";
         }
 
-        GenericProcessor* dn = BroadcastParser::getDestinationNode(sn, requestNodeId);
+        GenericProcessor* dn = CoreServices::getProcessorById(requestNodeId);
 
         if(dn == nullptr) {
             return "";
@@ -1036,7 +1036,7 @@ void DeviceThread::impedanceMeasurementFinished()
 void DeviceThread::sendImpedanceNotification() {
     std::map<String, var> emptyPayload;
     for(int nodeId : listenerNodes) {
-        GenericProcessor* dn = BroadcastParser::getDestinationNode(sn, nodeId);
+        GenericProcessor* dn = CoreServices::getProcessorById(nodeId);
         if (dn) {
             String message = BroadcastParser::build("", "IMPEDANCESREADY", emptyPayload);
             sn->sendDataThreadConfigMessage(dn, message);

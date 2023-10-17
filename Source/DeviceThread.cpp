@@ -1919,15 +1919,32 @@ bool DeviceThread::updateBuffer()
             index += 16; // skip ADC chans (8 * 2 bytes)
         }
 
+        std::optional<std::pair<int64_t, int64_t >> reference_sample_and_counter = std::nullopt;
+
         uint64 ttlEventWord = *(uint64*)(bufferPtr + index) & 65535;
+        if (ttl_sync_channel_index) {
+            bool cur_ttl_sync_signal = (ttlEventWord & (1 << ttl_sync_channel_index.value())) != 0;
+            if (total_samples_read > 0 && !last_ttl_sync_signal && cur_ttl_sync_signal) {
+                LOGC("*** DEBUG TIMESTAMP *** Received reference sample ", total_samples_read, ttl_counter);
+                reference_sample_and_counter = {  total_samples_read, ttl_counter };
+                ttl_counter++;
+            }
+            last_ttl_sync_signal = cur_ttl_sync_signal;
+        }
 
         index += 4;
 
-        sourceBuffers[0]->addToBuffer(thisSample,
-                                        &timestamp,
-                                        &ts,
-                                        &ttlEventWord,
-                                        1);
+        double buffer_ts = reference_sample_and_counter ? (double) reference_sample_and_counter->second : 0.0;
+        sourceBuffers[0]->addToBuffer(
+            thisSample,
+            &timestamp,
+            &buffer_ts,
+            &ttlEventWord,
+            1,
+            1,
+            reference_sample_and_counter ? reference_sample_and_counter->first : std::optional<int64>());
+        // NOTE: `timestamp` from Intan is only 32-bits so will overflow; need to keep a 64-bit version internally.
+        total_samples_read++;
     }
 
 
@@ -2161,6 +2178,9 @@ void DeviceThread::runImpedanceTest()
 
     impedanceThread->runThread();
 
+}
+void DeviceThread::setTtlSyncChannel(std::optional<int> ttl_sync_channel_index_) {
+    ttl_sync_channel_index = ttl_sync_channel_index_;
 }
 
 

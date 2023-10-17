@@ -200,6 +200,22 @@ DeviceEditor::DeviceEditor(GenericProcessor* parentNode,
     ttlSettleCombo->setSelectedId(1, sendNotification);
     addAndMakeVisible(ttlSettleCombo);
 
+    ttlSyncLabel = new Label("TTL Sync", "TTL Sync");
+    ttlSyncLabel->setFont(Font("Small Text", 10, Font::plain));
+    ttlSyncLabel->setBounds(255 + HS_PANEL_WIDTH, 100, 70, 20);
+    ttlSyncLabel->setColour(Label::textColourId, Colours::darkgrey);
+    addAndMakeVisible(ttlSyncLabel);
+    ttlSyncCombo = new ComboBox("ttlSyncCombo");
+    ttlSyncCombo->setBounds(260 + HS_PANEL_WIDTH, 115, 60, 18);
+    ttlSyncCombo->addListener(this);
+    ttlSyncCombo->addItem("-",1);
+    for (int k=0; k<16; k++)
+    {
+        ttlSyncCombo->addItem("TTL"+String(1+k), 2+k);
+    }
+    ttlSyncCombo->setSelectedId(1, sendNotification);
+    addAndMakeVisible(ttlSyncCombo);
+
     ledButton = new UtilityButton("LED", Font("Small Text", 13, Font::plain));
     ledButton->setRadius(3.0f);
     ledButton->setBounds(288 + HS_PANEL_WIDTH, 108, 32, 18);
@@ -263,6 +279,13 @@ void DeviceEditor::comboBoxChanged(ComboBox* comboBox)
         {
             int HPFvalues[10] = {50,100,200,300,400,500,600,700,800,900};
             board->setDAChpf(HPFvalues[selection-2],true);
+        }
+    } else if (comboBox == ttlSyncCombo) {
+        int selectedChannel = ttlSyncCombo->getSelectedId();
+        if (selectedChannel == 1) {
+            board->setTtlSyncChannel(std::nullopt);
+        } else {
+            board->setTtlSyncChannel(selectedChannel - 2);
         }
     }
 }

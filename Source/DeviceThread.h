@@ -246,12 +246,14 @@ namespace RhythmNode
 			int ttlLine,
 			bool state);
 
+        void setTtlSyncChannel(std::optional<int> ttl_sync_channel_index);
+
 		int MAX_NUM_HEADSTAGES;
         #ifdef BUILD_TESTS
         unsigned char* testBuffer;
         int lastReadIndex;
         #endif
-	private:
+    private:
         
 		std::queue<DigitalOutputCommand> digitalOutputCommands;
 
@@ -383,12 +385,15 @@ namespace RhythmNode
 
 		StringArray channelNames;
 
-		double ts = 0; // placeholder double timestamp value
+        int64_t ttl_counter = 0;
+        std::optional<int> ttl_sync_channel_index = std::nullopt;
+        bool last_ttl_sync_signal;
+        int64_t total_samples_read = 0;
 
 		SortedSet<int> listenerNodes;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DeviceThread);
-	};
+    };
 
 }
 #endif  // __DEVICETHREAD_H_2C4CBD67__

@@ -105,9 +105,9 @@ namespace RhythmNode
 		ScopedPointer<UtilityButton> ledButton;
 
 		ScopedPointer<UtilityButton> dspoffsetButton;
-		ScopedPointer<ComboBox> ttlSettleCombo, dacHPFcombo;
+		ScopedPointer<ComboBox> ttlSettleCombo, dacHPFcombo, ttlSyncCombo;
 
-		ScopedPointer<Label> audioLabel, ttlSettleLabel, dacHPFlabel;
+		ScopedPointer<Label> audioLabel, ttlSettleLabel, dacHPFlabel, ttlSyncLabel;
 
 		bool saveImpedances, measureWhenRecording;
 

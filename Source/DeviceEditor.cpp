@@ -285,7 +285,7 @@ void DeviceEditor::comboBoxChanged(ComboBox* comboBox)
         if (selectedChannel == 1) {
             board->setTtlSyncChannel(std::nullopt);
         } else {
-            board->setTtlSyncChannel(selectedChannel - 2);
+            board->setTtlSyncChannel(std::make_optional<int>(selectedChannel - 2));
         }
     }
 }
@@ -427,6 +427,7 @@ void DeviceEditor::saveVisualizerEditorParameters(XmlElement* xml)
     xml->setAttribute("auto_measure_impedances",measureWhenRecording);
     xml->setAttribute("LEDs", ledButton->getToggleState());
     xml->setAttribute("ClockDivideRatio", clockInterface->getClockDivideRatio());
+    xml->setAttribute("ttlSyncComboId", ttlSyncCombo->getSelectedId());
 
 	// loop through all headstage options interfaces and save their parameters
     for (int i = 0; i < 4; i++) 
@@ -467,6 +468,10 @@ void DeviceEditor::loadVisualizerEditorParameters(XmlElement* xml)
     measureWhenRecording = xml->getBoolAttribute("auto_measure_impedances");
     ledButton->setToggleState(xml->getBoolAttribute("LEDs", true),sendNotification);
     clockInterface->setClockDivideRatio(xml->getIntAttribute("ClockDivideRatio"));
+    if (xml->hasAttribute("ttlSyncComboId")) {
+        ttlSyncCombo->setSelectedId(xml->getIntAttribute("ttlSyncComboId"));
+    }
+    
 
     int AudioOutputL = xml->getIntAttribute("AudioOutputL", -1);
     int AudioOutputR = xml->getIntAttribute("AudioOutputR", -1);

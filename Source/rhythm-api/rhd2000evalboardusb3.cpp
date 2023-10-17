@@ -29,7 +29,7 @@
 #include "rhd2000evalboardusb3.h"
 #include "rhd2000datablockusb3.h"
 
-#include "okFrontPanelDLL.h"
+#include <okFrontPanelDLL.h>
 
 using namespace std;
 using namespace OpalKellyLegacy;

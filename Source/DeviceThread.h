@@ -34,7 +34,7 @@
 #include "rhythm-api/rhd2000evalboardusb3.h"
 #include "rhythm-api/rhd2000registersusb3.h"
 #include "rhythm-api/rhd2000datablockusb3.h"
-#include "rhythm-api/okFrontPanelDLL.h"
+#include <okFrontPanelDLL.h>
 
 #define CHIP_ID_RHD2132  1
 #define CHIP_ID_RHD2216  2
@@ -389,6 +389,7 @@ namespace RhythmNode
         std::optional<int> ttl_sync_channel_index = std::nullopt;
         bool last_ttl_sync_signal;
         int64_t total_samples_read = 0;
+		std::optional<std::pair<int64_t, int64_t >> last_reference_sample_and_counter = std::nullopt;
 
 		SortedSet<int> listenerNodes;
 

@@ -51,8 +51,11 @@ add_dependencies(${PLUGIN_NAME} open-ephys)
 add_library(${PLUGIN_NAME}_testable SHARED ${SRC_FILES})
 
 target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers)
-target_include_directories(${PLUGIN_NAME} PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
-
+target_include_directories(${PLUGIN_NAME} PUBLIC
+	${GUI_BASE_DIR}/JuceLibraryCode
+	${GUI_BASE_DIR}/JuceLibraryCode/modules
+	${GUI_BASE_DIR}/Plugins/Headers
+	${GUI_COMMONLIB_DIR}/include)
 target_compile_features(${PLUGIN_NAME}_testable PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME}_testable PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
 
@@ -124,8 +127,9 @@ add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
 
 
 if(MSVC)	
-	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
-	set(FRONT_PANEL_RUNTIME "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll" )
+    set(FRONT_PANEL_LIBRARY "C:\\Program Files\\Opal Kelly\\FrontPanelUSB\\API\\lib\\x64\\okFrontPanel.lib")
+    set(FRONT_PANEL_RUNTIME "C:\\Program Files\\Opal Kelly\\FrontPanelUSB\\API\\lib\\x64\\okFrontPanel.dll")
+    set(FRONT_PANEL_INCLUDE_DIR "C:\\Program Files\\Opal Kelly\\FrontPanelUSB\\API\\include")
 
 	set_runtime_dll_paths(${PLUGIN_NAME} "${FRONT_PANEL_RUNTIME}")
 	set_runtime_dll_paths(${PLUGIN_NAME}_testable "${FRONT_PANEL_RUNTIME}")
@@ -136,6 +140,8 @@ elseif(APPLE)
 elseif(LINUX)
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so" )
 endif()
+target_include_directories(${PLUGIN_NAME} PUBLIC ${FRONT_PANEL_INCLUDE_DIR})
+
 
 #need to change the linked libraries search path in the test .exe
 if(APPLE)
@@ -175,16 +181,16 @@ endforeach()
 
 #additional libraries
 if (MSVC)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib")
+	target_link_libraries(${PLUGIN_NAME} ${FRONT_PANEL_LIBRARY})
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll DESTINATION ${GUI_BIN_DIR}/shared CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
-	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll ${GUI_BIN_DIR}/shared)
+	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_RUNTIME} ${GUI_BIN_DIR}/shared)
 elseif(LINUX)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so")
-	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
+	target_link_libraries(${PLUGIN_NAME} ${FRONT_PANEL_LIBRARY})
+	install(FILES ${FRONT_PANEL_LIBRARY} DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
+	target_link_libraries(${PLUGIN_NAME} ${FRONT_PANEL_LIBRARY})
 	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)	
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_LIBRARY} ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)	
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD
- 				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib  $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
+ 				COMMAND ${CMAKE_COMMAND} -E copy ${FRONT_PANEL_LIBRARY}  $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
 endif()

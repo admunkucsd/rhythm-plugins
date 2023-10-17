@@ -1614,7 +1614,7 @@ void DeviceThread::updateRegisters()
     }
 
     // Before generating register configuration command sequences, set amplifier
-    // bandwidth paramters.
+    // bandwidth paramparamters.
     settings.dsp.cutoffFreq = chipRegisters.setDspCutoffFreq(settings.dsp.cutoffFreq);
     settings.dsp.lowerBandwidth = chipRegisters.setLowerBandwidth(settings.dsp.lowerBandwidth);
     settings.dsp.upperBandwidth = chipRegisters.setUpperBandwidth(settings.dsp.upperBandwidth);
@@ -1919,30 +1919,30 @@ bool DeviceThread::updateBuffer()
             index += 16; // skip ADC chans (8 * 2 bytes)
         }
 
-        std::optional<std::pair<int64_t, int64_t >> reference_sample_and_counter = std::nullopt;
-
         uint64 ttlEventWord = *(uint64*)(bufferPtr + index) & 65535;
         if (ttl_sync_channel_index) {
-            bool cur_ttl_sync_signal = (ttlEventWord & (1 << ttl_sync_channel_index.value())) != 0;
+            bool cur_ttl_sync_signal = (bool)((ttlEventWord >> ttl_sync_channel_index.value()) & 0x1);
             if (total_samples_read > 0 && !last_ttl_sync_signal && cur_ttl_sync_signal) {
-                LOGC("*** DEBUG TIMESTAMP *** Received reference sample ", total_samples_read, ttl_counter);
-                reference_sample_and_counter = {  total_samples_read, ttl_counter };
+                last_reference_sample_and_counter = {  total_samples_read, ttl_counter };
                 ttl_counter++;
             }
+            // Unset so it doesn't propagate as an event
+            ttlEventWord &= ~(1 << (int) ttl_sync_channel_index.value());
             last_ttl_sync_signal = cur_ttl_sync_signal;
         }
 
         index += 4;
 
-        double buffer_ts = reference_sample_and_counter ? (double) reference_sample_and_counter->second : 0.0;
+        int64 total_samples_read_conv = total_samples_read;
+        double buffer_ts = last_reference_sample_and_counter ? (double)last_reference_sample_and_counter->second : 0.0;
         sourceBuffers[0]->addToBuffer(
             thisSample,
-            &timestamp,
+            &total_samples_read_conv,
             &buffer_ts,
             &ttlEventWord,
             1,
             1,
-            reference_sample_and_counter ? reference_sample_and_counter->first : std::optional<int64>());
+            last_reference_sample_and_counter.has_value() ? last_reference_sample_and_counter->first : std::optional<int64>());
         // NOTE: `timestamp` from Intan is only 32-bits so will overflow; need to keep a 64-bit version internally.
         total_samples_read++;
     }
@@ -2180,6 +2180,7 @@ void DeviceThread::runImpedanceTest()
 
 }
 void DeviceThread::setTtlSyncChannel(std::optional<int> ttl_sync_channel_index_) {
+    LOGC("SETTING TTL SYNC ", ttl_sync_channel_index_.has_value() ? ttl_sync_channel_index_.value() : -1);
     ttl_sync_channel_index = ttl_sync_channel_index_;
 }
 

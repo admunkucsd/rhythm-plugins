@@ -34,7 +34,7 @@
 #include "rhythm-api/rhd2000evalboardusb3.h"
 #include "rhythm-api/rhd2000registersusb3.h"
 #include "rhythm-api/rhd2000datablockusb3.h"
-#include "rhythm-api/okFrontPanelDLL.h"
+#include <okFrontPanelDLL.h>
 
 #include "DeviceThread.h"
 

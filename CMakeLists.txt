@@ -182,7 +182,7 @@ elseif(APPLE)
 			IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
 endif()
 
-target_link_libraries(${PLUGIN_NAME} PRIVATE rhythm-plugins::okFrontPanel)
+target_link_libraries(${PLUGIN_NAME} rhythm-plugins::okFrontPanel)
 
 #additional libraries
 if (MSVC)

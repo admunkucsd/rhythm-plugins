@@ -168,11 +168,12 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
-add_library(rhythm-plugins::okFrontPanel STATIC IMPORTED GLOBAL)
+add_library(rhythm-plugins::okFrontPanel SHARED IMPORTED GLOBAL)
 #additional libraries
 if (MSVC)
 	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY
-				 IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll"
+				 IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll")
+	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY
 				 IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib")
 elseif(LINUX)
 	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY

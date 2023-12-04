@@ -173,16 +173,29 @@ foreach( src_file IN ITEMS ${SRC_FILES})
 	source_group("${group_name}" FILES "${src_file}")
 endforeach()
 
+add_library(rhythm-plugins::okFrontPanel STATIC IMPORTED GLOBAL)
 #additional libraries
 if (MSVC)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib")
+	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY
+				 IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll"
+				 IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib")
+elseif(LINUX)
+	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY
+			IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so")
+elseif(APPLE)
+	set_property(TARGET rhythm-plugins::okFrontPanel PROPERTY
+			IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
+endif()
+
+target_link_libraries(${PLUGIN_NAME} PRIVATE rhythm-plugins::okFrontPanel)
+
+#additional libraries
+if (MSVC)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll DESTINATION ${GUI_BIN_DIR}/shared CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll ${GUI_BIN_DIR}/shared)
 elseif(LINUX)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so")
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
-	target_link_libraries(${PLUGIN_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib")
 	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
  				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)	
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD

@@ -126,11 +126,6 @@ add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
 if(MSVC)	
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.lib" )
 	set(FRONT_PANEL_RUNTIME "${CMAKE_CURRENT_SOURCE_DIR}/Resources/okFrontPanel.dll" )
-
-	set_runtime_dll_paths(${PLUGIN_NAME} "${FRONT_PANEL_RUNTIME}")
-	set_runtime_dll_paths(${PLUGIN_NAME}_testable "${FRONT_PANEL_RUNTIME}")
-	install_runtime_dlls(${PLUGIN_NAME}_testable ${PLUGIN_NAME}_tests $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
-
 elseif(APPLE)
 	set(FRONT_PANEL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib" )
 elseif(LINUX)

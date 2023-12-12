@@ -30,8 +30,8 @@
 
 #include "ImpedanceMeter.h"
 #include "Headstage.h"
-
 #include "USBThread.h"
+#include <layout/UG3DeviceLayouts.h>
 
 using namespace RhythmNode;
 
@@ -230,27 +230,46 @@ void DeviceThread::handleBroadcastMessage(String msg)
 
 String DeviceThread::handleConfigMessage(String msg){
     BroadcastPayload payload;
-    if(BroadcastParser::getPayloadForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
-        int requestNodeId;
-        if(!payload.getIntField("requestNodeId", requestNodeId, 0)) {
-            return "";
-        }
-
-        GenericProcessor* dn = CoreServices::getProcessorById(requestNodeId);
-
-        if(dn == nullptr) {
-            return "";
-        }
-
-        listenerNodes.add(requestNodeId);
-        
-        std::map<String, var> layoutPayload;
-        layoutPayload["layoutMaxX"] = 32;
-        layoutPayload["layoutMaxY"] = 32;
-        
-        String message = BroadcastParser::build("UG3ElectrodeViewer", "LOADELECTRODELAYOUT", layoutPayload);
-        sn -> sendDataThreadConfigMessage(dn, message);
+    if (!BroadcastParser::getPayloadForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
+        return "";
     }
+
+    int requestNodeId;
+    if (!payload.getIntField("requestNodeId", requestNodeId, 0)) {
+        return "";
+    }
+    listenerNodes.add(requestNodeId);
+
+    GenericProcessor *dn = CoreServices::getProcessorById(requestNodeId);
+
+    if (dn == nullptr) {
+        return "";
+    }
+
+    std::map<String, var> layoutPayload;
+    auto fs = int(evalBoard->getSampleRate());
+    auto num_channels = getNumChannels();
+    Array<String> acquisitionCapabilities = { String(fs) + "/" + String(num_channels) };
+    layoutPayload["capabilities"] = var(acquisitionCapabilities);
+    layoutPayload["currentCapability"] = var(acquisitionCapabilities[0]);
+
+    // Set a default layout here
+    std::vector<UG3ElectrodePosition> positions;
+    for (int i = 0; i < getNumChannels(); ++i) {
+        positions.push_back(UG3ElectrodePosition{
+            i,
+            i % 32,
+            i / 32,
+        });
+    }
+    UG3DeviceLayout layout = {
+        "Rhythm Data",
+        positions
+    };
+    UG3DeviceLayouts layouts({{layout}});
+    layoutPayload["layouts_json"] = SerializeUG3DeviceLayouts(layouts);
+    String message = BroadcastParser::build("UG3ElectrodeViewer", "LOADINPUTINFO", layoutPayload);
+    sn->sendDataThreadConfigMessage(dn, message);
     return "";
 }
 

@@ -184,6 +184,7 @@ elseif(APPLE)
 endif()
 
 target_link_libraries(${PLUGIN_NAME} rhythm-plugins::okFrontPanel)
+target_link_libraries(${PLUGIN_NAME} ug3-electrode-layout)
 
 #additional libraries
 if (MSVC)

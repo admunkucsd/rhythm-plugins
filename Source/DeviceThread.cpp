@@ -31,7 +31,7 @@
 #include "ImpedanceMeter.h"
 #include "Headstage.h"
 #include "USBThread.h"
-#include <layout/UG3DeviceLayouts.h>
+#include <ug3_electrode_model/models.h>
 
 using namespace RhythmNode;
 

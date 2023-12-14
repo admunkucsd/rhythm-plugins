@@ -267,7 +267,7 @@ String DeviceThread::handleConfigMessage(String msg){
         positions
     };
     UG3DeviceLayouts layouts({{layout}});
-    layoutPayload["layouts_json"] = SerializeUG3DeviceLayouts(layouts);
+    layoutPayload["layouts_json"] = layouts.Serialize();
     String message = BroadcastParser::build("UG3ElectrodeViewer", "LOADINPUTINFO", layoutPayload);
     sn->sendDataThreadConfigMessage(dn, message);
     return "";

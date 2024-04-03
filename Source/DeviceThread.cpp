@@ -258,8 +258,9 @@ String DeviceThread::handleConfigMessage(String msg){
     for (int i = 0; i < getNumChannels(); ++i) {
         positions.push_back(UG3ElectrodePosition{
             i,
-            i % 32,
-            i / 32,
+            i % 32 * 12,
+            i / 32 * 12,
+            8, 8
         });
     }
     UG3DeviceLayout layout = {

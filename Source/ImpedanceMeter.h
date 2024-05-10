@@ -24,8 +24,6 @@
 #ifndef __IMPEDANCEMETER_H_2C4CBD67__
 #define __IMPEDANCEMETER_H_2C4CBD67__
 
-#include <DataThreadHeaders.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <array>

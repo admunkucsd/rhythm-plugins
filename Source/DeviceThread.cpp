@@ -31,7 +31,9 @@
 #include "ImpedanceMeter.h"
 #include "Headstage.h"
 #include "USBThread.h"
+
 #include <ug3_electrode_model/models.h>
+#include <memory>
 
 using namespace RhythmNode;
 
@@ -1069,7 +1071,8 @@ void DeviceThread::saveImpedances(File& file)
 
     if (impedances.valid)
     {
-        std::unique_ptr<XmlElement> xml = std::unique_ptr<XmlElement>(new XmlElement("IMPEDANCES"));
+        //XmlElement* mainXml = new XmlElement("IMPEDANCES");
+        XmlElement* mainXml = new XmlElement("IMPEDANCES");
 
         int globalChannelNumber = -1;
 
@@ -1090,10 +1093,11 @@ void DeviceThread::saveImpedances(File& file)
                 headstageXml->addChildElement(channelXml);
             }
 
-            xml->addChildElement(headstageXml);
+            mainXml->addChildElement(headstageXml);
         }
 
-        xml->writeTo(file);
+        mainXml->writeTo(file);
+        //delete mainXml;
     }
 
 }

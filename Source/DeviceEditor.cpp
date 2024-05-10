@@ -317,6 +317,11 @@ void DeviceEditor::channelStateChanged(Array<int> newChannels)
 
 }
 
+Array<int> RhythmNode::DeviceEditor::getSelectedChannels()
+{
+    return Array<int>();
+}
+
 
 void DeviceEditor::buttonClicked(Button* button)
 {
@@ -347,7 +352,7 @@ void DeviceEditor::buttonClicked(Button* button)
                 channelStates.push_back(false);
         }
 
-        auto* channelSelector = new PopupChannelSelector(this, channelStates);
+        auto* channelSelector = new PopupChannelSelector(this, this, channelStates);
 
         channelSelector->setChannelButtonColour(Colour(0, 174, 239));
         channelSelector->setMaximumSelectableChannels(1);

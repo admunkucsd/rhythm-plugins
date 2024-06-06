@@ -27,10 +27,16 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 
 
 set(SOURCE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Source)
+
+if(BUILD_TESTS)
 set(TESTS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/Tests)
+endif()
 
 file(GLOB_RECURSE SRC_FILES LIST_DIRECTORIES false "${SOURCE_PATH}/*.cpp" "${SOURCE_PATH}/*.h")
+
+if(BUILD_TESTS)
 file(GLOB_RECURSE TESTS_FILES LIST_DIRECTORIES false "${TESTS_PATH}/*.cpp")
+endif()
 
 set(GUI_COMMONLIB_DIR ${GUI_BASE_DIR}/installed_libs)
 
@@ -48,11 +54,14 @@ endif()
 
 add_dependencies(${PLUGIN_NAME} open-ephys)
 
+if(BUILD_TESTS)
 add_library(${PLUGIN_NAME}_testable SHARED ${SRC_FILES})
+endif()
 
 target_compile_features(${PLUGIN_NAME} PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME} PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
 
+if(BUILD_TESTS)
 target_compile_features(${PLUGIN_NAME}_testable PUBLIC cxx_auto_type cxx_generalized_initializers)
 target_include_directories(${PLUGIN_NAME}_testable PUBLIC ${GUI_BASE_DIR}/JuceLibraryCode ${GUI_BASE_DIR}/JuceLibraryCode/modules ${GUI_BASE_DIR}/Plugins/Headers ${GUI_COMMONLIB_DIR}/include)
 
@@ -62,11 +71,15 @@ add_executable(
 		${TESTS_FILES}
 )
 target_compile_features(${PLUGIN_NAME}_tests PRIVATE cxx_std_17)
+endif()
 
 
 set(GUI_BIN_DIR ${CMAKE_BINARY_DIR}/plugin-GUI/${CONFIGURATION_FOLDER})
+
+if(BUILD_TESTS)
 set(GUI_TEST_BIN_COMMON_DIR ${GUI_BASE_DIR}/Build/TestBin/common)
 set(GUI_TEST_HELPERS_DIR ${GUI_BASE_DIR}/TestHelpers)
+endif()
 
 if (NOT CMAKE_LIBRARY_ARCHITECTURE)
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -80,11 +93,13 @@ endif()
 if(MSVC)
 	target_link_libraries(${PLUGIN_NAME} ${GUI_BIN_DIR}/open-ephys.lib)
 	target_compile_options(${PLUGIN_NAME} PRIVATE /sdl- /W0)
+	
+	if(BUILD_TESTS)
 	target_compile_options(${PLUGIN_NAME}_testable PRIVATE /sdl- /W0)
+	endif()
 
 	set(INSTALL_PATH  ${GUI_BIN_DIR}/plugins)	
 	install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${GUI_BIN_DIR}/plugins  CONFIGURATIONS ${CMAKE_CONFIGURATION_TYPES})
-
 elseif(LINUX)
 	target_link_libraries(${PLUGIN_NAME} GL X11 Xext Xinerama asound dl freetype pthread rt)
 	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
@@ -98,9 +113,11 @@ elseif(APPLE)
 	set_target_properties(${PLUGIN_NAME} PROPERTIES BUNDLE TRUE)
 	set_property(TARGET ${PLUGIN_NAME} APPEND_STRING PROPERTY LINK_FLAGS
 	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api8")
-
+	
+	if(BUILD_TESTS)
 	set_property(TARGET ${PLUGIN_NAME}_testable APPEND_STRING PROPERTY LINK_FLAGS
 	"-undefined dynamic_lookup -rpath @loader_path/../../../../shared-api8")
+	endif()
 
 	set(INSTALL_PATH  $ENV{HOME}/Library/Application\ Support/open-ephys/plugins-api8)
 	
@@ -119,8 +136,10 @@ elseif(MSVC OR LINUX)
        add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PLUGIN_NAME}> ${INSTALL_PATH})
 endif()
 
+if(BUILD_TESTS)
 add_dependencies(${PLUGIN_NAME}_testable gui_testable_source test_helpers)
 add_dependencies(${PLUGIN_NAME}_tests ${PLUGIN_NAME}_testable)
+endif()
 
 
 if(MSVC)	
@@ -134,7 +153,7 @@ endif()
 
 #need to change the linked libraries search path in the test .exe
 if(APPLE)
-
+	if(BUILD_TESTS)
     add_custom_command(TARGET ${PLUGIN_NAME}_testable POST_BUILD COMMAND
     install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib"
     ${FRONT_PANEL_LIBRARY} $<TARGET_FILE:${PLUGIN_NAME}_testable>)
@@ -142,9 +161,11 @@ if(APPLE)
     add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND
     install_name_tool -change "@loader_path/../Frameworks/libokFrontPanel.dylib"
     ${FRONT_PANEL_LIBRARY} $<TARGET_FILE:${PLUGIN_NAME}_tests>)
+	endif()
 endif()
 
 # Need to copy Open Ephys testing libraries to test .exe directory
+if(BUILD_TESTS)
 if(MSVC)
        add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gui_testable_source> $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
        add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:test_helpers> $<TARGET_FILE_DIR:${PLUGIN_NAME}_tests>)
@@ -156,7 +177,7 @@ target_compile_definitions(${PLUGIN_NAME}_tests PRIVATE -DBUILD_TESTS -DTEST_RUN
 target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ${PLUGIN_NAME}_testable gtest_main test_helpers ${FRONT_PANEL_LIBRARY} PUBLIC gui_testable_source)
 target_include_directories(${PLUGIN_NAME}_tests PRIVATE ${GUI_TEST_HELPERS_DIR}/include ${GUI_BASE_DIR}/Source)
 add_test(NAME ${PLUGIN_NAME}_tests  COMMAND ${PLUGIN_NAME}_tests)
-
+endif()
 
 
 #create filters for vs and xcode
@@ -185,8 +206,11 @@ endif()
 
 target_link_libraries(${PLUGIN_NAME} rhythm-plugins::okFrontPanel)
 target_link_libraries(${PLUGIN_NAME} ug3-electrode-model)
+
+if(BUILD_TESTS)
 target_link_libraries(${PLUGIN_NAME}_testable PRIVATE ug3-electrode-model)
 target_link_libraries(${PLUGIN_NAME}_tests PRIVATE ug3-electrode-model)
+endif()
 
 #additional libraries
 if (MSVC)
@@ -195,8 +219,11 @@ if (MSVC)
 elseif(LINUX)
 	install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.so DESTINATION ${GUI_BIN_DIR}/shared)
 elseif(APPLE)
+	if(BUILD_TESTS)
 	add_custom_command(TARGET ${PLUGIN_NAME}_tests POST_BUILD
  				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib ${CMAKE_BINARY_DIR}/lib/$<CONFIG>)	
+	endif()
+	
 	add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD
  				COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Resources/libokFrontPanel.dylib  $ENV{HOME}/Library/Application\ Support/open-ephys/shared-api8)
 endif()

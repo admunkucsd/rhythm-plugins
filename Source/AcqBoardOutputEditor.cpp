@@ -36,10 +36,10 @@ namespace AcqBoardOutputNamespace {
 
         board = (AcqBoardOutput*)parentNode;
 
-        addComboBoxParameterEditor(Parameter::STREAM_SCOPE, "ttl_out", 10, 30);
-        addComboBoxParameterEditor(Parameter::STREAM_SCOPE, "trigger_line", 10, 76);
-        addComboBoxParameterEditor(Parameter::STREAM_SCOPE, "gate_line", 100, 76);
-        addTextBoxParameterEditor(Parameter::STREAM_SCOPE, "event_duration", 100, 30);
+        addComboBoxParameterEditor("ttl_out", 10, 30);
+        addComboBoxParameterEditor("trigger_line", 10, 76);
+        addComboBoxParameterEditor("gate_line", 100, 76);
+        addTextBoxParameterEditor("event_duration", 100, 30);
 
         triggerButton = std::make_unique<UtilityButton>("Trigger", Font("Small Text", 13, Font::plain));
         triggerButton->setBounds(190, 95, 55, 25);

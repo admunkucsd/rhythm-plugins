@@ -55,16 +55,16 @@ namespace RhythmNode
 		~DeviceEditor() { }
 
 		/** Respond to combo box changes (e.g. sample rate)*/
-		void comboBoxChanged(ComboBox* comboBox) override;
+		void comboBoxChanged(ComboBox* comboBox);
 
 		/** Respond to button clicks*/
-		void buttonClicked(Button* button) override;
+		void buttonClicked(Button* button);
 
 		/** Disable UI during acquisition*/
-		void startAcquisition() override;
+		void startAcquisition();
 
 		/** Enable UI after acquisition is finished*/
-		void stopAcquisition() override;
+		void stopAcquisition();
 
 		/** Runs impedance test*/
 		void measureImpedance();
@@ -73,7 +73,7 @@ namespace RhythmNode
 		void saveImpedance(File& file);
 
 		/** Updates channel canvas*/
-		void updateSettings() override;
+		void updateSettings();
 
 		/** Saves custom parameters */
 		void saveVisualizerEditorParameters(XmlElement* xml) override;
@@ -82,7 +82,7 @@ namespace RhythmNode
 		void loadVisualizerEditorParameters(XmlElement* xml) override;
 
 		/** Creates an interface with additional channel settings*/
-		Visualizer* createNewCanvas(void) override;
+		Visualizer* createNewCanvas(void);
 
 		/** Called by PopupChannelSelector */
 		void channelStateChanged(Array<int> newChannels) override;
@@ -122,10 +122,6 @@ namespace RhythmNode
 		AudioChannel activeAudioChannel;
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DeviceEditor);
-
-
-		// Inherited via Listener
-		Array<int> getSelectedChannels() override;
 
 	};
 

@@ -152,7 +152,7 @@ namespace RhythmNode
 
 		void scanPorts();
 
-		void saveImpedances(juce::File& file);
+		void saveImpedances(File& file);
 
 		// DEPRECATED:
 		//int getNumDataOutputs(DataChannel::DataChannelTypes type, int subProcessor) const override;

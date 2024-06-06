@@ -34,16 +34,14 @@ namespace AcqBoardOutputNamespace {
         , gateIsOpen(true)
     {
 
-        addIntParameter(Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "The digital output to trigger", 1, 1, 8);
-        addIntParameter(Parameter::STREAM_SCOPE, "trigger_line", "Trigger Line", "The TTL bit for triggering output", 1, 1, 16);
-        addIntParameter(Parameter::STREAM_SCOPE, "gate_line", "Gate Line", "The TTL bit for gating the output", 0, 0, 16);
-        addBooleanParameter(Parameter::STREAM_SCOPE, "trigger", "Trigger", "Manually triggers output", false);
+        addIntParameter(Parameter::STREAM_SCOPE, "ttl_out", "The digital output to trigger", 1, 1, 8);
+        addIntParameter(Parameter::STREAM_SCOPE, "trigger_line", "The TTL bit for triggering output", 1, 1, 16);
+        addIntParameter(Parameter::STREAM_SCOPE, "gate_line", "The TTL bit for gating the output", 0, 0, 16);
+        addBooleanParameter(Parameter::STREAM_SCOPE, "trigger", "Manually triggers output", false);
 
         addFloatParameter(
             Parameter::STREAM_SCOPE,
             "event_duration",
-            "Event Duration",
-            "(ms)",
             "The amount of time (in ms) the output stays high",
             500, 100, 2000, 1.0);
     }

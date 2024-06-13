@@ -124,9 +124,9 @@ namespace RhythmNode
 		ChannelNamingScheme getNamingScheme();
 
 		/** Allow the thread to respond to messages sent by other plugins */
-		void handleBroadcastMessage(String msg) override;
+		void handleBroadcastMessage(const String& msg, const int64 systemTimeMillis) override;
         
-        String handleConfigMessage(String msg) override;
+        String handleConfigMessage(const String& msg) override;
 
 		/** Informs the DataThread about whether to expect saved settings to be loaded*/
 		void initialize(bool signalChainIsLoading) override;

@@ -187,7 +187,7 @@ std::unique_ptr<GenericEditor> DeviceThread::createEditor(SourceNode* sn)
     return editor;
 }
 
-void DeviceThread::handleBroadcastMessage(String msg)
+void DeviceThread::handleBroadcastMessage(const String& msg, const int64 systemTimeMillis)
 {
     StringArray parts = StringArray::fromTokens(msg, " ", "");
 
@@ -230,7 +230,7 @@ void DeviceThread::handleBroadcastMessage(String msg)
 
 }
 
-String DeviceThread::handleConfigMessage(String msg){
+String DeviceThread::handleConfigMessage(const String& msg){
     BroadcastPayload payload;
     if (!BroadcastParser::getPayloadForCommand("", "GETELECTRODELAYOUT", msg, payload)) {
         return "";

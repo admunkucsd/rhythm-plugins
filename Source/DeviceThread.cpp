@@ -256,9 +256,9 @@ String DeviceThread::handleConfigMessage(const String& msg){
     layoutPayload["currentCapability"] = var(acquisitionCapabilities[0]);
 
     // Set a default layout here
-    std::vector<UG3ElectrodePosition> positions;
+    std::vector<UG3ElectrodeProperties> positions;
     for (int i = 0; i < getNumChannels(); ++i) {
-        positions.push_back(UG3ElectrodePosition{
+        positions.push_back(UG3ElectrodeProperties{
             i,
             i % 32,
             i / 32,

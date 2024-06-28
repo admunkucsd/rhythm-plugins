@@ -1964,6 +1964,7 @@ bool DeviceThread::updateBuffer()
             &buffer_ts,
             &ttlEventWord,
             1,
+            1,
             reference_sample_and_counter ? reference_sample_and_counter->first : std::optional<int64>());
         // NOTE: `timestamp` from Intan is only 32-bits so will overflow; need to keep a 64-bit version internally.
         total_samples_read++;

@@ -52,7 +52,8 @@ ChannelList::ChannelList(DeviceThread* board_, DeviceEditor* editor_) :
     numberingScheme->setSelectedId(1, dontSendNotification);
     addAndMakeVisible(numberingScheme);
 
-    impedanceEnableButton = new UtilityButton("Measure Impedances: OFF", Font("Default", 13, Font::plain));
+    impedanceEnableButton = new UtilityButton("Measure Impedances: OFF");
+    impedanceEnableButton->setFont(FontOptions("Default", 13, Font::plain));
     impedanceEnableButton->setRadius(3);
     impedanceEnableButton->setBounds(280,10,200,25);
     impedanceEnableButton->addListener(this);
@@ -60,13 +61,15 @@ ChannelList::ChannelList(DeviceThread* board_, DeviceEditor* editor_) :
     impedanceEnableButton->setToggleState(false, sendNotification);
     addAndMakeVisible(impedanceEnableButton);
     
-    impedanceButton = new UtilityButton("Measure Impedances", Font("Default", 13, Font::plain));
+    impedanceButton = new UtilityButton("Measure Impedances");
+    impedanceButton->setFont(FontOptions("Default", 13, Font::plain));
     impedanceButton->setRadius(3);
     impedanceButton->setBounds(490,10,140,25);
     impedanceButton->addListener(this);
     addAndMakeVisible(impedanceButton);
 
-    saveImpedanceButton = new UtilityButton("Save Impedances", Font("Default", 13, Font::plain));
+    saveImpedanceButton = new UtilityButton("Save Impedances");
+    saveImpedanceButton->setFont(FontOptions("Default", 13, Font::plain));
     saveImpedanceButton->setRadius(3);
     saveImpedanceButton->setBounds(640,10,150,25);
     saveImpedanceButton->addListener(this);

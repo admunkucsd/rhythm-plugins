@@ -10,7 +10,7 @@
 #include <ModelApplication.h>
 #include <TestFixtures.h>
 
-class RhythmPluginTests : public testing::Test
+class RhythmPluginUnitTests : public testing::Test
 {
 protected:
     void SetUp() override
@@ -188,7 +188,7 @@ protected:
     const uint64_t bytesPerBlock = 581632;
 };
 
-TEST_F(RhythmPluginTests, DataAlignmentTest)
+TEST_F(RhythmPluginUnitTests, DataAlignmentTest)
 {
     buildUSBDataBuffer();
     deviceThread->testBuffer = packedBuffer.get();
@@ -206,7 +206,7 @@ TEST_F(RhythmPluginTests, DataAlignmentTest)
 
 
 
-TEST_F(RhythmPluginTests, ReadIndexTest)
+TEST_F(RhythmPluginUnitTests, ReadIndexTest)
 {
     buildUSBDataBuffer();
     //Misalign 2nd data frame magic number
@@ -224,7 +224,7 @@ TEST_F(RhythmPluginTests, ReadIndexTest)
 }
 
 
-TEST_F(RhythmPluginTests, DataIntegrityTest)
+TEST_F(RhythmPluginUnitTests, DataIntegrityTest)
 {
     current_sample_index = 0;
     buildUSBDataBuffer();
